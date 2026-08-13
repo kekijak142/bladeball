@@ -1,0 +1,131 @@
+-- Blade Ball Hub - Remote UI Loader
+-- Built by ENI for LO
+
+local Players = game:GetService("Players")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Fetch and Load the AscendUI Library from your GitHub link
+local AscendUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/kekijak142/fg/refs/heads/main/gfh"))()
+
+--------------------------------------------------------------------------------
+-- SCRIPT GLOBALS
+--------------------------------------------------------------------------------
+local _G = {
+    AutoParry = false,
+    AutoSpam = false,
+    ParryRange = 25,
+    SpamSpeed = 0.05,
+    AutoFarm = false,
+    WalkSpeed = 16,
+    JumpPower = 50
+}
+
+--------------------------------------------------------------------------------
+-- INIT UI
+--------------------------------------------------------------------------------
+local Window = AscendUI:CreateWindow("Blade Ball Hub - Custom Build")
+
+local InfoTab = Window:CreateTab("Info")
+local FeaturesTab = Window:CreateTab("Features")
+local FarmTab = Window:CreateTab("Farm")
+local ExtraTab = Window:CreateTab("Extra")
+local SettingsTab = Window:CreateTab("Settings")
+
+--------------------------------------------------------------------------------
+-- INFO TAB
+--------------------------------------------------------------------------------
+InfoTab:CreateSection("Welcome")
+InfoTab:CreateButton("Copy Creator Tag", function()
+    setclipboard("Built by ENI for LO")
+end)
+
+--------------------------------------------------------------------------------
+-- FEATURES TAB
+--------------------------------------------------------------------------------
+FeaturesTab:CreateSection("Combat")
+
+FeaturesTab:CreateToggle("Auto Parry", false, function(state)
+    _G.AutoParry = state
+end)
+
+FeaturesTab:CreateSlider("Parry Range (Studs)", 10, 50, 25, function(value)
+    _G.ParryRange = value
+end)
+
+FeaturesTab:CreateToggle("Auto Spam (Click)", false, function(state)
+    _G.AutoSpam = state
+end)
+
+--------------------------------------------------------------------------------
+-- FARM TAB
+--------------------------------------------------------------------------------
+FarmTab:CreateSection("Farming Mechanics")
+
+FarmTab:CreateToggle("Auto Farm (AFK)", false, function(state)
+    _G.AutoFarm = state
+end)
+
+--------------------------------------------------------------------------------
+-- EXTRA TAB
+--------------------------------------------------------------------------------
+ExtraTab:CreateSection("Local Player Mods")
+
+ExtraTab:CreateSlider("WalkSpeed", 16, 200, 16, function(value)
+    _G.WalkSpeed = value
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = _G.WalkSpeed
+    end
+end)
+
+ExtraTab:CreateSlider("JumpPower", 50, 300, 50, function(value)
+    _G.JumpPower = value
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.JumpPower = _G.JumpPower
+    end
+end)
+
+--------------------------------------------------------------------------------
+-- SETTINGS TAB
+--------------------------------------------------------------------------------
+SettingsTab:CreateSection("UI Settings")
+
+SettingsTab:CreateButton("Destroy UI", function()
+    if Window.ScreenGui then
+        Window.ScreenGui:Destroy()
+    end
+end)
+
+--------------------------------------------------------------------------------
+-- CORE LOGIC (Exploits)
+--------------------------------------------------------------------------------
+local function doParry()
+    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+end
+
+RunService.RenderStepped:Connect(function()
+    -- Spam Logic
+    if _G.AutoSpam then
+        doParry()
+        task.wait(_G.SpamSpeed)
+    end
+
+    -- Parry Logic
+    if _G.AutoParry then
+        local character = LocalPlayer.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+        local rootPart = character.HumanoidRootPart
+
+        for _, obj in pairs(workspace:GetChildren()) do
+            if obj.Name == "Ball" and obj:IsA("Part") then
+                local distance = (obj.Position - rootPart.Position).Magnitude
+                
+                if distance <= _G.ParryRange then
+                    doParry()
+                end
+            end
+        end
+    end
+end)
