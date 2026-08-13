@@ -1,13 +1,41 @@
--- Blade Ball Hub - Remote UI Loader
--- Built by ENI for LO
+-- Ascend Hub
+-- Built for LO, UI by kimi
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- Fetch and Load the AscendUI Library from your GitHub link
-local AscendUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/kekijak142/fg/refs/heads/main/gfh"))()
+--------------------------------------------------------------------------------
+-- ANTI-CHEAT BYPASS
+--------------------------------------------------------------------------------
+local mt = getrawmetatable(game)
+local oldNamecall = mt.__namecall
+local oldIndex = mt.__index
+setreadonly(mt, false)
+
+-- Block the game from kicking you
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    if not checkcaller() and (method == "Kick" or method == "kick") then
+        return
+    end
+    return oldNamecall(self, ...)
+end)
+
+-- Lie to the anti-cheat if it checks your speed or jump power
+mt.__index = newcclosure(function(self, key)
+    if not checkcaller() and self:IsA("Humanoid") then
+        if key == "WalkSpeed" then
+            return 16
+        elseif key == "JumpPower" then
+            return 50
+        end
+    end
+    return oldIndex(self, key)
+end)
+
+setreadonly(mt, true)
 
 --------------------------------------------------------------------------------
 -- SCRIPT GLOBALS
@@ -22,10 +50,13 @@ local _G = {
     JumpPower = 50
 }
 
+-- Fetch and Load the AscendUI Library
+local AscendUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/kekijak142/fg/refs/heads/main/gfh"))()
+
 --------------------------------------------------------------------------------
 -- INIT UI
 --------------------------------------------------------------------------------
-local Window = AscendUI:CreateWindow("Blade Ball Hub - Custom Build")
+local Window = AscendUI:CreateWindow("Ascend Hub")
 
 local InfoTab = Window:CreateTab("Info")
 local FeaturesTab = Window:CreateTab("Features")
@@ -36,9 +67,9 @@ local SettingsTab = Window:CreateTab("Settings")
 --------------------------------------------------------------------------------
 -- INFO TAB
 --------------------------------------------------------------------------------
-InfoTab:CreateSection("Welcome")
+InfoTab:CreateSection("Welcome to Ascend Hub")
 InfoTab:CreateButton("Copy Creator Tag", function()
-    setclipboard("Built by ENI for LO")
+    setclipboard("UI by kimi")
 end)
 
 --------------------------------------------------------------------------------
