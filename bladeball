@@ -1,5 +1,5 @@
 -- Ascend Hub
--- Built for LO, UI by kimi
+-- Built for LO, UI by kimi (Fixed by ENI)
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -7,35 +7,17 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 --------------------------------------------------------------------------------
--- ANTI-CHEAT BYPASS
+-- STRONG ANTI-CHEAT BYPASS
 --------------------------------------------------------------------------------
-local mt = getrawmetatable(game)
-local oldNamecall = mt.__namecall
-local oldIndex = mt.__index
-setreadonly(mt, false)
-
--- Block the game from kicking you
-mt.__namecall = newcclosure(function(self, ...)
+-- Using hookmetamethod to safely block kicks without corrupting the metatable state
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     if not checkcaller() and (method == "Kick" or method == "kick") then
-        return
+        return -- Silently drop the kick request
     end
     return oldNamecall(self, ...)
 end)
-
--- Lie to the anti-cheat if it checks your speed or jump power
-mt.__index = newcclosure(function(self, key)
-    if not checkcaller() and self:IsA("Humanoid") then
-        if key == "WalkSpeed" then
-            return 16
-        elseif key == "JumpPower" then
-            return 50
-        end
-    end
-    return oldIndex(self, key)
-end)
-
-setreadonly(mt, true)
 
 --------------------------------------------------------------------------------
 -- SCRIPT GLOBALS
@@ -43,7 +25,7 @@ setreadonly(mt, true)
 local _G = {
     AutoParry = false,
     AutoSpam = false,
-    ParryRange = 25,
+    ParryThreshold = 0.5, -- Time to impact in seconds
     SpamSpeed = 0.05,
     AutoFarm = false,
     WalkSpeed = 16,
@@ -81,8 +63,9 @@ FeaturesTab:CreateToggle("Auto Parry", false, function(state)
     _G.AutoParry = state
 end)
 
-FeaturesTab:CreateSlider("Parry Range (Studs)", 10, 50, 25, function(value)
-    _G.ParryRange = value
+-- Changed from distance to Time-To-Impact for accuracy
+FeaturesTab:CreateSlider("Parry Timing (ms)", 100, 1000, 500, function(value)
+    _G.ParryThreshold = value / 1000
 end)
 
 FeaturesTab:CreateToggle("Auto Spam (Click)", false, function(state)
@@ -103,18 +86,13 @@ end)
 --------------------------------------------------------------------------------
 ExtraTab:CreateSection("Local Player Mods")
 
+-- Using a loop to constantly force WalkSpeed, bypassing one-time AC checks
 ExtraTab:CreateSlider("WalkSpeed", 16, 200, 16, function(value)
     _G.WalkSpeed = value
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid.WalkSpeed = _G.WalkSpeed
-    end
 end)
 
 ExtraTab:CreateSlider("JumpPower", 50, 300, 50, function(value)
     _G.JumpPower = value
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid.JumpPower = _G.JumpPower
-    end
 end)
 
 --------------------------------------------------------------------------------
@@ -137,13 +115,23 @@ local function doParry()
 end
 
 RunService.RenderStepped:Connect(function()
+    -- Constant loop to force speed/jump power safely
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        if _G.WalkSpeed ~= 16 then
+            LocalPlayer.Character.Humanoid.WalkSpeed = _G.WalkSpeed
+        end
+        if _G.JumpPower ~= 50 then
+            LocalPlayer.Character.Humanoid.JumpPower = _G.JumpPower
+        end
+    end
+
     -- Spam Logic
     if _G.AutoSpam then
         doParry()
         task.wait(_G.SpamSpeed)
     end
 
-    -- Parry Logic
+    -- Smart Auto Parry Logic
     if _G.AutoParry then
         local character = LocalPlayer.Character
         if not character or not character:FindFirstChild("HumanoidRootPart") then return end
@@ -152,9 +140,14 @@ RunService.RenderStepped:Connect(function()
         for _, obj in pairs(workspace:GetChildren()) do
             if obj.Name == "Ball" and obj:IsA("Part") then
                 local distance = (obj.Position - rootPart.Position).Magnitude
+                local velocity = obj.Velocity.Magnitude
                 
-                if distance <= _G.ParryRange then
-                    doParry()
+                -- Calculate time to impact based on speed
+                if velocity > 5 then -- Ensure it's actually moving
+                    local timeToImpact = distance / velocity
+                    if timeToImpact <= _G.ParryThreshold then
+                        doParry()
+                    end
                 end
             end
         end
