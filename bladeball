@@ -180,7 +180,7 @@ end
 local function FlashVisualizer()
     if VisualizerRing and not isFlashing then
         isFlashing = true
-        VisualizerRing.Color = Color3.fromRGB(0, 255, 0) -- Flashes bright green
+        VisualizerRing.Color = Color3.fromRGB(0, 255, 0) 
         task.delay(0.25, function() 
             isFlashing = false
             if VisualizerRing then
@@ -226,9 +226,9 @@ local function UpdateVisualizer()
             end
 
             if targeted then
-                VisualizerRing.Color = Color3.fromRGB(255, 75, 75) -- Red
+                VisualizerRing.Color = Color3.fromRGB(255, 75, 75) 
             else
-                VisualizerRing.Color = ESPColor -- Default Purple Accent
+                VisualizerRing.Color = ESPColor 
             end
         end
     else
@@ -582,20 +582,20 @@ end)
 -------------------------------------------------
 -- KEYBINDS TAB UI CONNECTIONS
 -------------------------------------------------
-KeybindTab:CreateSection("Manual Toggles")
+KeybindTab:CreateSection("Hardware Keybinds Info")
 
-KeybindTab:CreateToggle("Auto Parry (Key: P)", false, function(v)
-    AutoParry = v
-    Notify("Auto Parry " .. (v and "Enabled" or "Disabled"))
+KeybindTab:CreateButton("Toggle Auto Parry (Key: P)", function()
+    AutoParry = not AutoParry
+    Notify("Auto Parry " .. (AutoParry and "Enabled" or "Disabled"))
 end)
 
-KeybindTab:CreateToggle("Ball ESP (Key: B)", false, function(v)
-    BallESP = v
-    Notify("Ball ESP " .. (v and "Enabled" or "Disabled"))
+KeybindTab:CreateButton("Toggle Ball ESP (Key: B)", function()
+    BallESP = not BallESP
+    Notify("Ball ESP " .. (BallESP and "Enabled" or "Disabled"))
 end)
 
-KeybindTab:CreateToggle("Auto Clicker (Key: C)", false, function(v)
-    AutoClicker = v
+KeybindTab:CreateButton("Toggle Auto Clicker (Key: C)", function()
+    AutoClicker = not AutoClicker
     Notify("Auto Clicker " .. (AutoClicker and "Enabled" or "Disabled"))
 end)
 
