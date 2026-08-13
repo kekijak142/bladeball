@@ -33,7 +33,7 @@ local AscendUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/keki
 local Window = AscendUI:CreateWindow("Ascend Hub | Premium")
 
 -------------------------------------------------
--- TABS (Fixed and added VisualTab back!)
+-- TABS
 -------------------------------------------------
 local MainTab = Window:CreateTab("Main")
 local VisualTab = Window:CreateTab("Visual")
@@ -88,6 +88,7 @@ local ESPColor = Color3.fromRGB(140, 82, 255) -- Matching your UI Accent
 local BallESPs = {}
 local PlayerBoxes = {}
 local VisualizerRing = nil
+local isFlashing = false -- Guard to prevent heartbeat color override during parry
 
 -------------------------------------------------
 -- NOTIFY FUNCTION
@@ -162,8 +163,10 @@ end
 -------------------------------------------------
 local function FlashVisualizer()
     if VisualizerRing then
-        VisualizerRing.Color = Color3.fromRGB(0, 255, 0) -- Flashes green when parry fires
-        task.delay(0.15, function()
+        isFlashing = true
+        VisualizerRing.Color = Color3.fromRGB(0, 255, 0) -- Flashes bright green
+        task.delay(0.2, function() -- Increased to 0.2s for better visibility
+            isFlashing = false
             if VisualizerRing then
                 VisualizerRing.Color = ESPColor
             end
@@ -184,33 +187,35 @@ local function UpdateVisualizer()
             VisualizerRing = Instance.new("Part")
             VisualizerRing.Name = "ParryVisualizerRing"
             VisualizerRing.Shape = Enum.PartType.Cylinder
-            VisualizerRing.Size = Vector3.new(0.5, 25, 25) -- Ring size around player
+            VisualizerRing.Size = Vector3.new(0.5, 25, 25) 
             VisualizerRing.Material = Enum.Material.ForceField
             VisualizerRing.Transparency = 0.5
             VisualizerRing.Anchored = true
             VisualizerRing.CanCollide = false
-            VisualizerRing.Orientation = Vector3.new(0, 0, 90) -- Lay flat on ground
+            VisualizerRing.Orientation = Vector3.new(0, 0, 90) 
             VisualizerRing.Parent = workspace
         end
 
         VisualizerRing.CFrame = hrp.CFrame * CFrame.new(0, -3, 0)
 
-        -- Change color if ball targets player
-        local targeted = false
-        local balls = workspace:FindFirstChild("Balls")
-        if Balls then
-            for _, ball in pairs(Balls:GetChildren()) do
-                if ball:IsA("BasePart") and ball:GetAttribute("target") == Player.Name then
-                    targeted = true
-                    break
+        -- Only update the color if it is NOT currently flashing green
+        if not isFlashing then
+            local targeted = false
+            local balls = workspace:FindFirstChild("Balls")
+            if Balls then
+                for _, ball in pairs(Balls:GetChildren()) do
+                    if ball:IsA("BasePart") and ball:GetAttribute("target") == Player.Name then
+                        targeted = true
+                        break
+                    end
                 end
             end
-        end
 
-        if targeted then
-            VisualizerRing.Color = Color3.fromRGB(255, 75, 75) -- Red alert
-        else
-            VisualizerRing.Color = ESPColor -- Default accent color
+            if targeted then
+                VisualizerRing.Color = Color3.fromRGB(255, 75, 75) -- Red
+            else
+                VisualizerRing.Color = ESPColor -- Default Purple Accent
+            end
         end
     else
         if VisualizerRing then
@@ -593,7 +598,7 @@ end)
 
 KeybindTab:CreateToggle("Auto Clicker (Key: C)", false, function(v)
     AutoClicker = v
-    Notify("Auto Clicker " .. (v and "Enabled" or "Disabled"))
+    Notify("Auto Clicker " .. (AutoClicker and "Enabled" or "Disabled"))
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
