@@ -1,5 +1,5 @@
 -------------------------------------------------
--- ASCEND HUB | BLADE BALL (FIXED VERSION 2)
+-- ASCEND HUB | BLADE BALL (ULTIMATE FIXED VERSION)
 -------------------------------------------------
 -- WHITELIST / SECURITY
 -------------------------------------------------
@@ -447,14 +447,15 @@ RunService.Heartbeat:Connect(function()
                 if velocity > 0 then
                     local prediction = distance / velocity
                     
-                    -- Improved parry logic with debounce
                     if target == Player.Name and prediction <= 0.6 then
                         if tick() - LastParryTime > ParryCooldown then
                             LastParryTime = tick()
                             
                             VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                            VIM:SendKeyEvent(true, Enum.KeyCode.F, false, game)
                             task.wait(0.05) 
                             VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                            VIM:SendKeyEvent(false, Enum.KeyCode.F, false, game)
                             
                             FlashVisualizer()
                             Curve()
@@ -467,8 +468,10 @@ RunService.Heartbeat:Connect(function()
 
     if SpamHit and Character then
         VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+        VIM:SendKeyEvent(true, Enum.KeyCode.F, false, game)
         task.wait(0.01)
         VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+        VIM:SendKeyEvent(false, Enum.KeyCode.F, false, game)
     end
 
     if AutoWalk and Character then
@@ -487,8 +490,10 @@ RunService.Heartbeat:Connect(function()
                 hum:MoveTo(enemy.Character.HumanoidRootPart.Position)
                 if dist <= 15 then 
                     VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                    VIM:SendKeyEvent(true, Enum.KeyCode.F, false, game)
                     task.wait(0.01)
                     VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.F, false, game)
                 end
             end
         end
@@ -498,14 +503,20 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -------------------------------------------------
--- RELIABLE AUTO CLICKER THREAD
+-- RELIABLE SPAM BLOCK / AUTO CLICKER THREAD
 -------------------------------------------------
 task.spawn(function()
     while true do
         if AutoClicker then
+            -- Spams both Left Click and 'F' Key simultaneously
             VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-            task.wait(0.02)
+            VIM:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+            
+            task.wait(0.01) -- Insanely fast hold
+            
             VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+            VIM:SendKeyEvent(false, Enum.KeyCode.F, false, game)
+            
             task.wait(1 / ClickSpeed)
         else
             task.wait(0.1)
