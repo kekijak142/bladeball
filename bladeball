@@ -1,5 +1,5 @@
 -------------------------------------------------
--- ASCEND HUB | BLADE BALL (FIXED VERSION)
+-- ASCEND HUB | BLADE BALL (FIXED VERSION 2)
 -------------------------------------------------
 -- WHITELIST / SECURITY
 -------------------------------------------------
@@ -428,9 +428,8 @@ Player.Idled:Connect(function()
 end)
 
 -------------------------------------------------
--- MAIN LOOP
+-- MAIN LOOP (HEARTBEAT)
 -------------------------------------------------
-local LastClickTime = 0
 RunService.Heartbeat:Connect(function()
     local balls = GetBalls()
 
@@ -448,7 +447,7 @@ RunService.Heartbeat:Connect(function()
                 if velocity > 0 then
                     local prediction = distance / velocity
                     
-                    -- Improved parry logic with debounce to stop spamming
+                    -- Improved parry logic with debounce
                     if target == Player.Name and prediction <= 0.6 then
                         if tick() - LastParryTime > ParryCooldown then
                             LastParryTime = tick()
@@ -463,15 +462,6 @@ RunService.Heartbeat:Connect(function()
                     end
                 end
             end
-        end
-    end
-
-    if AutoClicker then
-        if tick() - LastClickTime >= 1 / ClickSpeed then
-            LastClickTime = tick()
-            VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-            task.wait(0.01)
-            VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
         end
     end
 
@@ -495,7 +485,7 @@ RunService.Heartbeat:Connect(function()
             local hum = Character:FindFirstChildOfClass("Humanoid")
             if hum then
                 hum:MoveTo(enemy.Character.HumanoidRootPart.Position)
-                if dist <= 15 then -- Increased clash range slightly
+                if dist <= 15 then 
                     VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
                     task.wait(0.01)
                     VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
@@ -505,6 +495,22 @@ RunService.Heartbeat:Connect(function()
     end
 
     UpdateESP()
+end)
+
+-------------------------------------------------
+-- RELIABLE AUTO CLICKER THREAD
+-------------------------------------------------
+task.spawn(function()
+    while true do
+        if AutoClicker then
+            VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+            task.wait(0.02)
+            VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+            task.wait(1 / ClickSpeed)
+        else
+            task.wait(0.1)
+        end
+    end
 end)
 
 -------------------------------------------------
