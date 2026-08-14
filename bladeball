@@ -1,142 +1,147 @@
--------------------------------------------------
--- ASCEND HUB | BLADE BALL (PREMIUM SKID CORE)
--------------------------------------------------
+-- Ascend Hub | Blade Ball Auto-Parry Integration
+-- Loads your UI library directly from the GitHub raw link
+local AscendUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/kekijak142/fg/refs/heads/main/gfh"))()
+
+-- Core Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 local VirtualInputManager = game:GetService("VirtualInputManager")
-local Stats = game:GetService("Stats")
 
 local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 
-LocalPlayer.CharacterAdded:Connect(function(char)
-    Character = char
-end)
+-- Configuration Table (Linked directly to your UI)
+local Config = {
+    AutoParry = false,
+    ParryDistance = 25,
+    PingCompensation = false,
+    PingMultiplier = 0.05
+}
 
--- Variables
-local AutoParry = false
-local AutoClicker = false
-local SpamHit = false
+-- Target Remote
+local ParryRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("FireBall", 5)
+if not ParryRemote then warn("[Ascend] 'FireBall' remote not found! Using virtual click fallback.") end
 
--- Dynamic Ping Calculation
-local function GetPing()
-    local ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-    return ping / 1000 -- Convert to seconds
-end
+-- Auto Parry Logic Variables
+local isParrying = false
+local lastParryTime = 0
+local parryCooldown = 0.4
 
--- Find Balls
-local function GetBalls()
-    local ballsFolder = workspace:FindFirstChild("Balls")
-    if not ballsFolder then return {} end
-    local balls = {}
-    for _, v in pairs(ballsFolder:GetChildren()) do
-        if v:IsA("BasePart") then table.insert(balls, v) end
-    end
-    return balls
-end
-
--- Ultimate Parry Trigger
-local function TriggerParry()
-    pcall(function()
-        -- Method 1: Try raw keypress (Executor specific)
-        if keypress then
-            keypress(0x46) -- 'F' key
-            task.wait(0.01)
-            keyrelease(0x46)
+local function getActiveBall()
+    local ballsFolder = Workspace:FindFirstChild("Balls") or Workspace
+    for _, obj in pairs(ballsFolder:GetChildren()) do
+        if obj:IsA("BasePart") and obj.Name == "Ball" and obj.Velocity.Magnitude > 0 then
+            return obj
         end
-        -- Method 2: Try Virtual Input (Standard fallback)
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
-        task.wait(0.01)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
-        
-        -- Method 3: Mouse click fallback
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-        task.wait(0.01)
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+    end
+    return nil
+end
+
+local function getPing()
+    local ping = LocalPlayer:GetNetworkPing() * 2000 
+    if ping > 300 then ping = 300 end 
+    return ping
+end
+
+local function calculateThreat(ball)
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return false end
+    
+    local rootPart = LocalPlayer.Character.HumanoidRootPart
+    local distance = (rootPart.Position - ball.Position).Magnitude
+    local velocity = ball.Velocity.Magnitude
+    
+    -- Check if ball is moving towards the player
+    local directionToPlayer = (rootPart.Position - ball.Position).Unit
+    local ballDirection = ball.Velocity.Unit
+    local isApproaching = directionToPlayer:Dot(ballDirection) > 0.45
+    
+    if not isApproaching and distance > 15 then return false end
+    
+    -- Calculate dynamic range
+    local dynamicParryRange = Config.ParryDistance + (velocity * 0.1)
+    
+    if Config.PingCompensation then
+        dynamicParryRange = dynamicParryRange + (getPing() * Config.PingMultiplier)
+    end
+    
+    if distance <= dynamicParryRange then
+        return true
+    end
+    
+    return false
+end
+
+local function executeParry()
+    if isParrying or (tick() - lastParryTime) < parryCooldown then return end
+    isParrying = true
+    lastParryTime = tick()
+    
+    if ParryRemote then
+        ParryRemote:FireServer()
+    else
+        -- Fallback Virtual Click
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+        task.wait(0.05)
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+    end
+    
+    task.delay(0.2, function()
+        isParrying = false
     end)
 end
 
--- Advanced Prediction Loop
-RunService.Stepped:Connect(function()
-    if not AutoParry or not Character then return end
-    local HRP = Character:FindFirstChild("HumanoidRootPart")
-    if not HRP then return end
-
-    local balls = GetBalls()
-    local ping = GetPing()
+-- The Heartbeat Hook
+RunService.Heartbeat:Connect(function()
+    if not Config.AutoParry then return end
     
-    for _, ball in pairs(balls) do
-        -- Check if ball is targeting us
-        local target = ball:GetAttribute("target") or ball:GetAttribute("Target") or ball:GetAttribute("realTarget")
-        
-        if target == LocalPlayer.Name then
-            local distance = (HRP.Position - ball.Position).Magnitude
-            local velocity = ball.AssemblyLinearVelocity.Magnitude
-            
-            if velocity > 0 then
-                -- Calculate time to impact, subtracting ping to react earlier
-                local timeToImpact = (distance / velocity) - ping
-                
-                -- Dynamic threshold based on ball speed
-                local parryWindow = 0.55
-                if velocity > 100 then
-                    parryWindow = 0.65 -- React sooner for fast balls
-                end
-                
-                if timeToImpact <= parryWindow then
-                    TriggerParry()
-                end
-            end
+    local ball = getActiveBall()
+    if ball then
+        local isThreat = calculateThreat(ball)
+        if isThreat then
+            executeParry()
         end
     end
 end)
 
--------------------------------------------------
--- SPAM HIT / AUTO CLICKER THREAD
--------------------------------------------------
-task.spawn(function()
-    while true do
-        if AutoClicker or SpamHit then
-            TriggerParry()
-            task.wait(0.01) -- Insane spam speed
-        else
-            task.wait(0.1)
-        end
-    end
+---------------------------------------------------------
+-- ASCEND UI CREATION
+---------------------------------------------------------
+
+local Window = AscendUI:CreateWindow("Ascend Hub | Blade Ball")
+
+-- Combat Tab
+local CombatTab = Window:CreateTab("Combat")
+CombatTab:CreateSection("Auto Parry Settings")
+
+CombatTab:CreateToggle("Enable Auto Parry", false, function(state)
+    Config.AutoParry = state
 end)
 
--------------------------------------------------
--- QUICK UI FOR TESTING
--------------------------------------------------
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 200, 0, 150)
-Frame.Position = UDim2.new(0, 50, 0, 50)
-Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Text = "Ascend Core"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.BackgroundTransparency = 1
-
-local ParryBtn = Instance.new("TextButton", Frame)
-ParryBtn.Size = UDim2.new(0.8, 0, 0, 30)
-ParryBtn.Position = UDim2.new(0.1, 0, 0.3, 0)
-ParryBtn.Text = "Auto Parry: OFF"
-
-ParryBtn.MouseButton1Click:Connect(function()
-    AutoParry = not AutoParry
-    ParryBtn.Text = "Auto Parry: " .. (AutoParry and "ON" or "OFF")
+CombatTab:CreateSlider("Base Detection Range", 10, 60, 25, function(value)
+    Config.ParryDistance = value
 end)
 
-local SpamBtn = Instance.new("TextButton", Frame)
-SpamBtn.Size = UDim2.new(0.8, 0, 0, 30)
-SpamBtn.Position = UDim2.new(0.1, 0, 0.6, 0)
-SpamBtn.Text = "Spam Block: OFF"
+CombatTab:CreateSection("Network & Predictions")
 
-SpamBtn.MouseButton1Click:Connect(function()
-    SpamHit = not SpamHit
-    SpamBtn.Text = "Spam Block: " .. (SpamHit and "ON" or "OFF")
+CombatTab:CreateToggle("Ping Compensation", false, function(state)
+    Config.PingCompensation = state
+end)
+
+CombatTab:CreateSlider("Ping Aggressiveness", 1, 10, 5, function(value)
+    -- Converts the 1-10 slider into a 0.01 to 0.1 multiplier for the math
+    Config.PingMultiplier = value / 100 
+end)
+
+-- Misc Tab
+local MiscTab = Window:CreateTab("Misc")
+MiscTab:CreateSection("System")
+
+MiscTab:CreateButton("Unload Ascend Hub", function()
+    -- Disables script and destroys UI
+    Config.AutoParry = false
+    local coreGui = game:GetService("CoreGui"):FindFirstChild("AscendPremiumGUI")
+    local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("AscendPremiumGUI")
+    if coreGui then coreGui:Destroy() end
+    if playerGui then playerGui:Destroy() end
 end)
