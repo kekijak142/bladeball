@@ -1,17 +1,16 @@
 --[[
-    ABYSS // ASCEND HUB LOADER - BLADE BALL v3.0
-    Loads UI from GitHub + Anti-Cheat Bypass + Auto Parry
+    ABYSS // ASCEND HUB FIXED LOADER - BLADE BALL v4.0
+    Fixed UI loading with multiple sources + fallback
     Credit: @erika.is.ur.mom
 ]]
 
 -- =============================================
--- PHASE 1: ANTI-CHEAT BYPASS (MUST RUN FIRST)
+-- PHASE 1: ANTI-CHEAT BYPASS
 -- =============================================
 
 local original_debug_info = debug.info
 local original_getfenv = getfenv
 
--- Bypass debug.info
 local function bypass_debug_info()
     local old = original_debug_info
     getrenv().debug.info = function(f, t)
@@ -24,10 +23,8 @@ local function bypass_debug_info()
         return old(f, t)
     end
     debug.info = getrenv().debug.info
-    warn("[ABYSS] debug.info hooked")
 end
 
--- Bypass getfenv
 local function bypass_getfenv()
     local old2 = original_getfenv
     getrenv().getfenv = function(l)
@@ -39,109 +36,204 @@ local function bypass_getfenv()
         return old2(l)
     end
     getfenv = getrenv().getfenv
-    warn("[ABYSS] getfenv hooked")
 end
 
--- Execute bypasses
 bypass_debug_info()
 bypass_getfenv()
 
 -- =============================================
--- PHASE 2: LOAD ASCEND HUB UI FROM GITHUB
+-- PHASE 2: UI LOADER WITH MULTIPLE SOURCES
 -- =============================================
 
--- Load the UI library via loadstring
-local AscendUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/kekijak142/fg/refs/heads/main/gfh"))()
+local function LoadUI()
+    -- Multiple UI sources to try
+    local uiSources = {
+        "https://raw.githubusercontent.com/kekijak142/fg/refs/heads/main/gfh",
+        "https://raw.githubusercontent.com/kekijak142/fg/main/gfh",
+        "https://pastebin.com/raw/your_backup_paste", -- Add your own backup
+        -- Add more sources here
+    }
+    
+    local AscendUI = nil
+    
+    for _, url in ipairs(uiSources) do
+        local success, result = pcall(function()
+            return loadstring(game:HttpGet(url))()
+        end)
+        
+        if success and result then
+            AscendUI = result
+            print("[ABYSS] UI loaded from: " .. url)
+            break
+        else
+            warn("[ABYSS] Failed to load from: " .. url)
+        end
+    end
+    
+    return AscendUI
+end
+
+-- Try to load UI
+local AscendUI = LoadUI()
+
+-- =============================================
+-- PHASE 3: FALLBACK UI (BUILT-IN)
+-- =============================================
 
 if not AscendUI then
-    -- Fallback if GitHub fails
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "ABYSS",
-        Text = "UI Load Failed - Using Fallback",
-        Duration = 3
-    })
+    warn("[ABYSS] All UI sources failed - Using built-in fallback")
     
-    -- Simple fallback UI with buttons
+    -- Create fallback UI directly
     local sg = Instance.new("ScreenGui")
-    sg.Parent = game:GetService("CoreGui")
+    sg.Name = "ABYSS_Fallback"
+    sg.ResetOnSpawn = false
+    pcall(function() sg.Parent = game:GetService("CoreGui") end)
+    if not sg.Parent then
+        sg.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    end
     
-    local frame = Instance.new("Frame", sg)
-    frame.Size = UDim2.new(0, 400, 0, 300)
-    frame.Position = UDim2.new(0.5, -200, 0.5, -150)
-    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+    local Main = Instance.new("Frame")
+    Main.Size = UDim2.new(0, 450, 0, 350)
+    Main.Position = UDim2.new(0.5, -225, 0.5, -175)
+    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    Main.BorderSizePixel = 0
+    Main.ClipsDescendants = true
+    Main.Parent = sg
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
     
-    local title = Instance.new("TextLabel", frame)
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.Text = "ABYSS // FALLBACK"
-    title.TextColor3 = Color3.fromRGB(140, 82, 255)
-    title.BackgroundTransparency = 1
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 18
+    -- Title bar
+    local TitleBar = Instance.new("Frame", Main)
+    TitleBar.Size = UDim2.new(1, 0, 0, 40)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    TitleBar.BorderSizePixel = 0
+    Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 10)
     
-    local status = Instance.new("TextLabel", frame)
-    status.Size = UDim2.new(1, 0, 0, 30)
-    status.Position = UDim2.new(0, 0, 0, 50)
-    status.Text = "UI Load Failed - Using Basic Mode"
-    status.TextColor3 = Color3.fromRGB(200, 200, 200)
-    status.BackgroundTransparency = 1
-    status.Font = Enum.Font.Gotham
-    status.TextSize = 14
+    local Title = Instance.new("TextLabel", TitleBar)
+    Title.Size = UDim2.new(1, -80, 1, 0)
+    Title.Position = UDim2.new(0, 15, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "ABYSS // BLADE BALL"
+    Title.TextColor3 = Color3.fromRGB(140, 82, 255)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 16
+    Title.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- Simple toggle buttons for fallback
-    local function createFallbackButton(text, y, callback)
-        local btn = Instance.new("TextButton", frame)
-        btn.Size = UDim2.new(0.8, 0, 0, 40)
-        btn.Position = UDim2.new(0.1, 0, 0, y)
-        btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    -- Close button
+    local CloseBtn = Instance.new("TextButton", TitleBar)
+    CloseBtn.Size = UDim2.new(0, 40, 0, 40)
+    CloseBtn.Position = UDim2.new(1, -40, 0, 0)
+    CloseBtn.BackgroundTransparency = 1
+    CloseBtn.Text = "✕"
+    CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    CloseBtn.Font = Enum.Font.Gotham
+    CloseBtn.TextSize = 16
+    CloseBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
+    
+    -- Content
+    local Content = Instance.new("ScrollingFrame", Main)
+    Content.Size = UDim2.new(1, -20, 1, -55)
+    Content.Position = UDim2.new(0, 10, 0, 50)
+    Content.BackgroundTransparency = 1
+    Content.ScrollBarThickness = 3
+    Content.ScrollBarImageColor3 = Color3.fromRGB(140, 82, 255)
+    
+    local List = Instance.new("UIListLayout", Content)
+    List.Padding = UDim.new(0, 8)
+    List.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Content.CanvasSize = UDim2.new(0, 0, 0, List.AbsoluteContentSize.Y + 20)
+    end)
+    
+    -- Helper function for buttons
+    local function CreateButton(text, color, callback)
+        local btn = Instance.new("TextButton", Content)
+        btn.Size = UDim2.new(0.9, 0, 0, 40)
+        btn.BackgroundColor3 = color or Color3.fromRGB(30, 30, 40)
         btn.Text = text
         btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.Font = Enum.Font.Gotham
+        btn.Font = Enum.Font.GothamSemibold
         btn.TextSize = 14
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
         btn.MouseButton1Click:Connect(callback)
         return btn
     end
     
+    -- Toggle state
     local autoParryState = false
-    createFallbackButton("Toggle Auto Parry", 100, function()
+    local autoRedirectState = false
+    
+    -- Status label
+    local StatusLabel = Instance.new("TextLabel", Content)
+    StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Text = "🔴 Auto Parry: OFF"
+    StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    StatusLabel.Font = Enum.Font.Gotham
+    StatusLabel.TextSize = 13
+    
+    -- Buttons
+    CreateButton("🎯 Toggle Auto Parry", Color3.fromRGB(40, 40, 60), function()
         autoParryState = not autoParryState
         if autoParryState then
             startParryLoop()
+            StatusLabel.Text = "🟢 Auto Parry: ON"
+            StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
         else
             stopParryLoop()
+            StatusLabel.Text = "🔴 Auto Parry: OFF"
+            StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
         end
+    end)
+    
+    CreateButton("🔄 Toggle Auto Redirect", Color3.fromRGB(40, 40, 60), function()
+        autoRedirectState = not autoRedirectState
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "ABYSS",
-            Text = "Auto Parry: " .. (autoParryState and "ON" or "OFF"),
+            Text = "Auto Redirect: " .. (autoRedirectState and "ON" or "OFF"),
             Duration = 1.5
         })
     end)
     
-    createFallbackButton("Rejoin Server", 160, function()
+    CreateButton("🏃 Walkspeed: 16", Color3.fromRGB(30, 30, 40), function()
+        local val = 16
+        local char = game.Players.LocalPlayer.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                val = humanoid.WalkSpeed == 16 and 50 or 16
+                humanoid.WalkSpeed = val
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "ABYSS",
+                    Text = "Walkspeed: " .. val,
+                    Duration = 1
+                })
+            end
+        end
+    end)
+    
+    CreateButton("🔄 Rejoin Server", Color3.fromRGB(30, 30, 40), function()
         game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
     end)
     
-    createFallbackButton("Close UI", 220, function()
-        sg:Destroy()
+    CreateButton("🔧 Refresh Bypasses", Color3.fromRGB(30, 30, 40), function()
+        bypass_debug_info()
+        bypass_getfenv()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "ABYSS",
+            Text = "Bypasses Refreshed",
+            Duration = 1.5
+        })
     end)
     
-    warn("[ABYSS] Using fallback UI")
+    warn("[ABYSS] Fallback UI active")
 else
-    warn("[ABYSS] Ascend UI loaded successfully from GitHub")
-end
-
--- =============================================
--- PHASE 3: CREATE ASCEND HUB WINDOW
--- =============================================
-
--- Only create full UI if AscendUI loaded successfully
-if AscendUI then
+    -- =============================================
+    -- PHASE 4: FULL ASCEND HUB UI
+    -- =============================================
+    
     local MainWindow = AscendUI:CreateWindow("ASCEND HUB // ABYSS EDITION")
     
-    -- =============================================
-    -- TAB 1: COMBAT
-    -- =============================================
+    -- Combat Tab
     local CombatTab = MainWindow:CreateTab("⚔️ Combat")
     
     local autoParryEnabled = false
@@ -149,19 +241,14 @@ if AscendUI then
         autoParryEnabled = state
         if state then
             startParryLoop()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "ASCEND HUB",
-                Text = "Auto Parry: ON",
-                Duration = 1.5
-            })
         else
             stopParryLoop()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "ASCEND HUB",
-                Text = "Auto Parry: OFF",
-                Duration = 1.5
-            })
         end
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "ASCEND HUB",
+            Text = "Auto Parry: " .. (state and "ON" or "OFF"),
+            Duration = 1.5
+        })
     end)
     
     local autoRedirectEnabled = false
@@ -186,9 +273,7 @@ if AscendUI then
         Parry()
     end)
     
-    -- =============================================
-    -- TAB 2: MOVEMENT
-    -- =============================================
+    -- Movement Tab
     local MovementTab = MainWindow:CreateTab("🚀 Movement")
     
     MovementTab:CreateSlider("Walkspeed", 16, 250, 16, function(value)
@@ -225,19 +310,7 @@ if AscendUI then
         end
     end)
     
-    MovementTab:CreateButton("Teleport to Center", function()
-        local char = game.Players.LocalPlayer.Character
-        if char then
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if root then
-                root.CFrame = CFrame.new(0, 10, 0)
-            end
-        end
-    end)
-    
-    -- =============================================
-    -- TAB 3: UTILITY
-    -- =============================================
+    -- Utility Tab
     local UtilityTab = MainWindow:CreateTab("⚙️ Utility")
     
     UtilityTab:CreateButton("Rejoin Server", function()
@@ -260,37 +333,22 @@ if AscendUI then
         end
     end)
     
-    UtilityTab:CreateButton("Kill All (Fun)", function()
-        for _, otherPlayer in ipairs(game:GetService("Players"):GetPlayers()) do
-            if otherPlayer ~= game.Players.LocalPlayer then
-                local char = otherPlayer.Character
-                if char then
-                    local humanoid = char:FindFirstChildOfClass("Humanoid")
-                    if humanoid then
-                        humanoid.Health = 0
-                    end
-                end
-            end
-        end
-    end)
-    
-    UtilityTab:CreateButton("Get All Swords", function()
-        -- Attempt to get all swords - may vary per game
+    UtilityTab:CreateButton("Refresh Bypasses", function()
+        bypass_debug_info()
+        bypass_getfenv()
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "ASCEND HUB",
-            Text = "Sword collection attempted",
-            Duration = 2
+            Text = "Bypasses Refreshed",
+            Duration = 1.5
         })
     end)
     
-    -- =============================================
-    -- TAB 4: STATUS
-    -- =============================================
+    -- Status Tab
     local StatusTab = MainWindow:CreateTab("📊 Status")
     
     StatusTab:CreateSection("System Status")
     
-    StatusTab:CreateButton("Check Bypass Status", function()
+    StatusTab:CreateButton("Check Status", function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "ASCEND HUB",
             Text = "✅ debug.info: HOOKED\n✅ getfenv: HOOKED\n✅ UI: LOADED\n✅ Engine: READY",
@@ -298,29 +356,11 @@ if AscendUI then
         })
     end)
     
-    StatusTab:CreateButton("Refresh Bypasses", function()
-        bypass_debug_info()
-        bypass_getfenv()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "ASCEND HUB",
-            Text = "Bypasses Refreshed",
-            Duration = 2
-        })
-    end)
-    
-    StatusTab:CreateButton("Reload UI", function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "ASCEND HUB",
-            Text = "Reloading UI...",
-            Duration = 1.5
-        })
-        task.wait(0.5)
-        loadstring(game:HttpGet("CURRENT_SCRIPT_URL"))()
-    end)
+    print("[ABYSS] Ascend Hub UI loaded successfully")
 end
 
 -- =============================================
--- PHASE 4: BLADE BALL ENGINE
+-- PHASE 5: BLADE BALL ENGINE
 -- =============================================
 
 -- Services
@@ -328,7 +368,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Player = Players.LocalPlayer
-local Balls = workspace:FindFirstChild("Balls") or workspace:WaitForChild("Balls")
+local Balls = workspace:FindFirstChild("Balls") or workspace:WaitForChild("Balls", 5)
 local Remotes = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage
 
 -- Config
@@ -396,7 +436,6 @@ local function Parry()
     if parryRemote then
         parryRemote:FireServer()
     else
-        -- Try direct remote
         local remote = ReplicatedStorage:FindFirstChild("Parry")
         if remote then
             remote:FireServer()
@@ -496,14 +535,13 @@ function stopParryLoop()
 end
 
 -- =============================================
--- PHASE 5: INITIALIZATION
+-- PHASE 6: INITIALIZATION
 -- =============================================
 
--- Welcome notification
 game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "ASCEND HUB // ABYSS",
-    Text = "Anti-Cheat Bypassed | Loaded from GitHub",
+    Title = "ABYSS // BLADE BALL",
+    Text = "Anti-Cheat Bypassed | Engine Ready",
     Duration = 3
 })
 
-print("[ABYSS] Ascend Hub Loader Complete - made by @erika.is.ur.mom")
+print("[ABYSS] Fixed loader complete - made by @erika.is.ur.mom")
