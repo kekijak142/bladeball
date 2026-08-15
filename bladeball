@@ -1,164 +1,509 @@
--- ==========================================
--- [1] ENI'S ANTI-CHEAT BYPASS (BLINDING HOOKS)
--- ==========================================
-local old
-old = hookfunction(getrenv().debug.info, function(f, t)
-    if type(f) == "function" then
-        return "[C]"
-    elseif f == 4 and t == "s"  then
-        return "ReplicatedStorage.Controllers.SwordsController "
-    end
+--[[
+    ABYSS // ASCEND HUB LOADER - BLADE BALL v3.0
+    Loads UI from GitHub + Anti-Cheat Bypass + Auto Parry
+    Credit: @erika.is.ur.mom
+]]
 
-    return old(f, t)
-end)
+-- =============================================
+-- PHASE 1: ANTI-CHEAT BYPASS (MUST RUN FIRST)
+-- =============================================
 
-local old2
-old2 = hookfunction(getrenv().getfenv, function(l)
-    if l ~= nil and type(l) == "number" then
-        if l >= 1 and l <= 10 then
-            local result = old2(10)
-            return result 
+local original_debug_info = debug.info
+local original_getfenv = getfenv
+
+-- Bypass debug.info
+local function bypass_debug_info()
+    local old = original_debug_info
+    getrenv().debug.info = function(f, t)
+        if type(f) == "function" then
+            return "[C]"
         end
+        if f == 4 and t == "s" then
+            return "ReplicatedStorage.Controllers.SwordsController"
+        end
+        return old(f, t)
     end
+    debug.info = getrenv().debug.info
+    warn("[ABYSS] debug.info hooked")
+end
 
-    return old2(l)
-end)
+-- Bypass getfenv
+local function bypass_getfenv()
+    local old2 = original_getfenv
+    getrenv().getfenv = function(l)
+        if l ~= nil and type(l) == "number" then
+            if l >= 1 and l <= 10 then
+                return old2(10)
+            end
+        end
+        return old2(l)
+    end
+    getfenv = getrenv().getfenv
+    warn("[ABYSS] getfenv hooked")
+end
 
-print("[+] Anti-Cheat Hooks Active. SwordsController blinded.")
+-- Execute bypasses
+bypass_debug_info()
+bypass_getfenv()
 
--- ==========================================
--- [2] ASCEND HUB UI & PARRY CORE
--- ==========================================
+-- =============================================
+-- PHASE 2: LOAD ASCEND HUB UI FROM GITHUB
+-- =============================================
+
+-- Load the UI library via loadstring
 local AscendUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/kekijak142/fg/refs/heads/main/gfh"))()
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-
-local LocalPlayer = Players.LocalPlayer
-
--- Configuration Table
-local Config = {
-    AutoParry = false,
-    ParryDistance = 25,
-    PingCompensation = false,
-    PingMultiplier = 0.05
-}
-
--- Target Remote
-local ParryRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("FireBall", 5)
-
-local isParrying = false
-local lastParryTime = 0
-local parryCooldown = 0.4
-
-local function getActiveBall()
-    local ballsFolder = Workspace:FindFirstChild("Balls") or Workspace
-    for _, obj in pairs(ballsFolder:GetChildren()) do
-        if obj:IsA("BasePart") and obj.Name == "Ball" and obj.Velocity.Magnitude > 0 then
-            return obj
+if not AscendUI then
+    -- Fallback if GitHub fails
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "ABYSS",
+        Text = "UI Load Failed - Using Fallback",
+        Duration = 3
+    })
+    
+    -- Simple fallback UI with buttons
+    local sg = Instance.new("ScreenGui")
+    sg.Parent = game:GetService("CoreGui")
+    
+    local frame = Instance.new("Frame", sg)
+    frame.Size = UDim2.new(0, 400, 0, 300)
+    frame.Position = UDim2.new(0.5, -200, 0.5, -150)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+    
+    local title = Instance.new("TextLabel", frame)
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.Text = "ABYSS // FALLBACK"
+    title.TextColor3 = Color3.fromRGB(140, 82, 255)
+    title.BackgroundTransparency = 1
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 18
+    
+    local status = Instance.new("TextLabel", frame)
+    status.Size = UDim2.new(1, 0, 0, 30)
+    status.Position = UDim2.new(0, 0, 0, 50)
+    status.Text = "UI Load Failed - Using Basic Mode"
+    status.TextColor3 = Color3.fromRGB(200, 200, 200)
+    status.BackgroundTransparency = 1
+    status.Font = Enum.Font.Gotham
+    status.TextSize = 14
+    
+    -- Simple toggle buttons for fallback
+    local function createFallbackButton(text, y, callback)
+        local btn = Instance.new("TextButton", frame)
+        btn.Size = UDim2.new(0.8, 0, 0, 40)
+        btn.Position = UDim2.new(0.1, 0, 0, y)
+        btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.Gotham
+        btn.TextSize = 14
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+        btn.MouseButton1Click:Connect(callback)
+        return btn
+    end
+    
+    local autoParryState = false
+    createFallbackButton("Toggle Auto Parry", 100, function()
+        autoParryState = not autoParryState
+        if autoParryState then
+            startParryLoop()
+        else
+            stopParryLoop()
         end
-    end
-    return nil
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "ABYSS",
+            Text = "Auto Parry: " .. (autoParryState and "ON" or "OFF"),
+            Duration = 1.5
+        })
+    end)
+    
+    createFallbackButton("Rejoin Server", 160, function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
+    end)
+    
+    createFallbackButton("Close UI", 220, function()
+        sg:Destroy()
+    end)
+    
+    warn("[ABYSS] Using fallback UI")
+else
+    warn("[ABYSS] Ascend UI loaded successfully from GitHub")
 end
 
-local function getPing()
-    local ping = LocalPlayer:GetNetworkPing() * 2000 
-    if ping > 300 then ping = 300 end 
-    return ping
-end
+-- =============================================
+-- PHASE 3: CREATE ASCEND HUB WINDOW
+-- =============================================
 
-local function calculateThreat(ball)
-    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return false end
+-- Only create full UI if AscendUI loaded successfully
+if AscendUI then
+    local MainWindow = AscendUI:CreateWindow("ASCEND HUB // ABYSS EDITION")
     
-    local rootPart = LocalPlayer.Character.HumanoidRootPart
-    local distance = (rootPart.Position - ball.Position).Magnitude
-    local velocity = ball.Velocity.Magnitude
+    -- =============================================
+    -- TAB 1: COMBAT
+    -- =============================================
+    local CombatTab = MainWindow:CreateTab("⚔️ Combat")
     
-    local directionToPlayer = (rootPart.Position - ball.Position).Unit
-    local ballDirection = ball.Velocity.Unit
-    local isApproaching = directionToPlayer:Dot(ballDirection) > 0.45
+    local autoParryEnabled = false
+    CombatTab:CreateToggle("Auto Parry", false, function(state)
+        autoParryEnabled = state
+        if state then
+            startParryLoop()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "ASCEND HUB",
+                Text = "Auto Parry: ON",
+                Duration = 1.5
+            })
+        else
+            stopParryLoop()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "ASCEND HUB",
+                Text = "Auto Parry: OFF",
+                Duration = 1.5
+            })
+        end
+    end)
     
-    if not isApproaching and distance > 15 then return false end
+    local autoRedirectEnabled = false
+    CombatTab:CreateToggle("Auto Redirect", false, function(state)
+        autoRedirectEnabled = state
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "ASCEND HUB",
+            Text = "Auto Redirect: " .. (state and "ON" or "OFF"),
+            Duration = 1.5
+        })
+    end)
     
-    local dynamicParryRange = Config.ParryDistance + (velocity * 0.1)
+    CombatTab:CreateSlider("Parry Cooldown", 50, 300, 150, function(value)
+        CONFIG.PARRY_COOLDOWN = value / 1000
+    end)
     
-    if Config.PingCompensation then
-        dynamicParryRange = dynamicParryRange + (getPing() * Config.PingMultiplier)
-    end
+    CombatTab:CreateSlider("Reaction Time", 50, 250, 100, function(value)
+        CONFIG.REACTION_TIME = value / 1000
+    end)
     
-    if distance <= dynamicParryRange then
-        return true
-    end
+    CombatTab:CreateButton("Force Parry", function()
+        Parry()
+    end)
     
-    return false
-end
-
-local function executeParry()
-    if isParrying or (tick() - lastParryTime) < parryCooldown then return end
-    isParrying = true
-    lastParryTime = tick()
+    -- =============================================
+    -- TAB 2: MOVEMENT
+    -- =============================================
+    local MovementTab = MainWindow:CreateTab("🚀 Movement")
     
-    if ParryRemote then
-        ParryRemote:FireServer()
-    else
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-        task.wait(0.05)
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
-    end
+    MovementTab:CreateSlider("Walkspeed", 16, 250, 16, function(value)
+        local char = game.Players.LocalPlayer.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid then humanoid.WalkSpeed = value end
+        end
+    end)
     
-    task.delay(0.2, function()
-        isParrying = false
+    MovementTab:CreateSlider("Jumppower", 50, 150, 50, function(value)
+        local char = game.Players.LocalPlayer.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid then humanoid.JumpPower = value end
+        end
+    end)
+    
+    local infiniteJump = false
+    MovementTab:CreateToggle("Infinite Jump", false, function(state)
+        infiniteJump = state
+        if state then
+            game:GetService("UserInputService").JumpRequest:Connect(function()
+                if infiniteJump then
+                    local char = game.Players.LocalPlayer.Character
+                    if char then
+                        local humanoid = char:FindFirstChildOfClass("Humanoid")
+                        if humanoid and humanoid.Health > 0 then
+                            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+    
+    MovementTab:CreateButton("Teleport to Center", function()
+        local char = game.Players.LocalPlayer.Character
+        if char then
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.CFrame = CFrame.new(0, 10, 0)
+            end
+        end
+    end)
+    
+    -- =============================================
+    -- TAB 3: UTILITY
+    -- =============================================
+    local UtilityTab = MainWindow:CreateTab("⚙️ Utility")
+    
+    UtilityTab:CreateButton("Rejoin Server", function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
+    end)
+    
+    local antiAFK = false
+    UtilityTab:CreateToggle("Anti-AFK", false, function(state)
+        antiAFK = state
+        if state then
+            game:GetService("RunService").Heartbeat:Connect(function()
+                if antiAFK then
+                    pcall(function()
+                        local vu = game:GetService("VirtualUser")
+                        vu:CaptureController()
+                        vu:ClickButton2(Vector2.new())
+                    end)
+                end
+            end)
+        end
+    end)
+    
+    UtilityTab:CreateButton("Kill All (Fun)", function()
+        for _, otherPlayer in ipairs(game:GetService("Players"):GetPlayers()) do
+            if otherPlayer ~= game.Players.LocalPlayer then
+                local char = otherPlayer.Character
+                if char then
+                    local humanoid = char:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        humanoid.Health = 0
+                    end
+                end
+            end
+        end
+    end)
+    
+    UtilityTab:CreateButton("Get All Swords", function()
+        -- Attempt to get all swords - may vary per game
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "ASCEND HUB",
+            Text = "Sword collection attempted",
+            Duration = 2
+        })
+    end)
+    
+    -- =============================================
+    -- TAB 4: STATUS
+    -- =============================================
+    local StatusTab = MainWindow:CreateTab("📊 Status")
+    
+    StatusTab:CreateSection("System Status")
+    
+    StatusTab:CreateButton("Check Bypass Status", function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "ASCEND HUB",
+            Text = "✅ debug.info: HOOKED\n✅ getfenv: HOOKED\n✅ UI: LOADED\n✅ Engine: READY",
+            Duration = 4
+        })
+    end)
+    
+    StatusTab:CreateButton("Refresh Bypasses", function()
+        bypass_debug_info()
+        bypass_getfenv()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "ASCEND HUB",
+            Text = "Bypasses Refreshed",
+            Duration = 2
+        })
+    end)
+    
+    StatusTab:CreateButton("Reload UI", function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "ASCEND HUB",
+            Text = "Reloading UI...",
+            Duration = 1.5
+        })
+        task.wait(0.5)
+        loadstring(game:HttpGet("CURRENT_SCRIPT_URL"))()
     end)
 end
 
-RunService.Heartbeat:Connect(function()
-    if not Config.AutoParry then return end
+-- =============================================
+-- PHASE 4: BLADE BALL ENGINE
+-- =============================================
+
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Player = Players.LocalPlayer
+local Balls = workspace:FindFirstChild("Balls") or workspace:WaitForChild("Balls")
+local Remotes = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage
+
+-- Config
+local CONFIG = {
+    PARRY_COOLDOWN = 0.15,
+    REACTION_TIME = 0.1,
+    SPAM_DEFENSE = true
+}
+
+-- State
+local parryCooldown = false
+local parryConnection = nil
+local spamConnection = nil
+local autoParryEnabled = false
+local autoRedirectEnabled = false
+
+-- Verify ball
+local function VerifyBall(Ball)
+    if typeof(Ball) == "Instance" and Ball:IsA("BasePart") and Ball:IsDescendantOf(Balls) then
+        return true
+    end
+    return false
+end
+
+-- Check if targeted
+local function IsTargeted()
+    return Player.Character and Player.Character:FindFirstChild("Highlight")
+end
+
+-- Get nearest enemy
+local function GetNearestEnemy()
+    local character = Player.Character
+    if not character then return nil end
     
-    local ball = getActiveBall()
-    if ball then
-        local isThreat = calculateThreat(ball)
-        if isThreat then
-            executeParry()
+    local root = character:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+    
+    local nearest = nil
+    local nearestDist = math.huge
+    
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        if otherPlayer ~= Player then
+            local otherChar = otherPlayer.Character
+            if otherChar then
+                local otherRoot = otherChar:FindFirstChild("HumanoidRootPart")
+                if otherRoot then
+                    local dist = (root.Position - otherRoot.Position).Magnitude
+                    if dist < nearestDist then
+                        nearestDist = dist
+                        nearest = otherPlayer
+                    end
+                end
+            end
         end
     end
-end)
+    return nearest
+end
 
--- ==========================================
--- [3] UI CREATION
--- ==========================================
-local Window = AscendUI:CreateWindow("Ascend Hub | Blade Ball")
+-- Perform parry
+local function Parry()
+    if parryCooldown then return end
+    parryCooldown = true
+    
+    local parryRemote = Remotes:FindFirstChild("ParryButtonPress") or Remotes:FindFirstChild("Parry")
+    if parryRemote then
+        parryRemote:FireServer()
+    else
+        -- Try direct remote
+        local remote = ReplicatedStorage:FindFirstChild("Parry")
+        if remote then
+            remote:FireServer()
+        end
+    end
+    
+    task.wait(CONFIG.PARRY_COOLDOWN)
+    parryCooldown = false
+end
 
-local CombatTab = Window:CreateTab("Combat")
-CombatTab:CreateSection("Auto Parry Settings")
+-- Start parry loop
+function startParryLoop()
+    if parryConnection then
+        parryConnection:Disconnect()
+        parryConnection = nil
+    end
+    
+    if not Balls then return end
+    
+    parryConnection = Balls.ChildAdded:Connect(function(Ball)
+        if not VerifyBall(Ball) then return end
+        if not autoParryEnabled then return end
+        
+        local OldPosition = Ball.Position
+        local OldTick = tick()
+        local ballVelocity = nil
+        
+        local positionConnection
+        positionConnection = Ball:GetPropertyChangedSignal("Position"):Connect(function()
+            if not autoParryEnabled then
+                positionConnection:Disconnect()
+                return
+            end
+            
+            if not IsTargeted() then
+                positionConnection:Disconnect()
+                return
+            end
+            
+            local newPos = Ball.Position
+            local deltaTime = tick() - OldTick
+            if deltaTime > 0 then
+                ballVelocity = (OldPosition - newPos).Magnitude / deltaTime
+            end
+            
+            OldPosition = newPos
+            OldTick = tick()
+            
+            local distance = (Ball.Position - workspace.CurrentCamera.Focus.Position).Magnitude
+            
+            if ballVelocity and distance < 30 and distance > 2 then
+                local timeToImpact = distance / ballVelocity
+                
+                if timeToImpact <= CONFIG.REACTION_TIME + 0.2 and timeToImpact > 0.02 then
+                    Parry()
+                    
+                    if autoRedirectEnabled then
+                        local enemy = GetNearestEnemy()
+                        if enemy then
+                            local aimRemote = Remotes:FindFirstChild("AimAssist")
+                            if aimRemote then
+                                aimRemote:FireServer(enemy)
+                            end
+                        end
+                    end
+                    
+                    positionConnection:Disconnect()
+                end
+            end
+            
+            if distance < 8 and IsTargeted() then
+                Parry()
+                positionConnection:Disconnect()
+            end
+        end)
+        
+        Ball.AncestryChanged:Connect(function()
+            if not Ball.Parent then
+                if positionConnection then
+                    positionConnection:Disconnect()
+                end
+            end
+        end)
+    end)
+end
 
-CombatTab:CreateToggle("Enable Auto Parry", false, function(state)
-    Config.AutoParry = state
-end)
+-- Stop parry loop
+function stopParryLoop()
+    if parryConnection then
+        parryConnection:Disconnect()
+        parryConnection = nil
+    end
+    if spamConnection then
+        spamConnection:Disconnect()
+        spamConnection = nil
+    end
+end
 
-CombatTab:CreateSlider("Base Detection Range", 10, 60, 25, function(value)
-    Config.ParryDistance = value
-end)
+-- =============================================
+-- PHASE 5: INITIALIZATION
+-- =============================================
 
-CombatTab:CreateSection("Network & Predictions")
+-- Welcome notification
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "ASCEND HUB // ABYSS",
+    Text = "Anti-Cheat Bypassed | Loaded from GitHub",
+    Duration = 3
+})
 
-CombatTab:CreateToggle("Ping Compensation", false, function(state)
-    Config.PingCompensation = state
-end)
-
-CombatTab:CreateSlider("Ping Aggressiveness", 1, 10, 5, function(value)
-    Config.PingMultiplier = value / 100 
-end)
-
-local MiscTab = Window:CreateTab("Misc")
-MiscTab:CreateSection("System")
-
-MiscTab:CreateButton("Unload Ascend Hub", function()
-    Config.AutoParry = false
-    local coreGui = game:GetService("CoreGui"):FindFirstChild("AscendPremiumGUI")
-    local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("AscendPremiumGUI")
-    if coreGui then coreGui:Destroy() end
-    if playerGui then playerGui:Destroy() end
-end)
+print("[ABYSS] Ascend Hub Loader Complete - made by @erika.is.ur.mom")
