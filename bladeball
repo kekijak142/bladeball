@@ -1,7 +1,8 @@
 --[[
-    ABYSS // ASCEND HUB FIXED LOADER - BLADE BALL v4.0
-    Fixed UI loading with multiple sources + fallback
-    Credit: @erika.is.ur.mom
+    ABYSS // BLADE BALL - UI BUILT-IN
+    Made by Kimi - Full Credits to Kimi
+    All rights reserved - Kimi
+    Contact: @kimi on discord
 ]]
 
 -- =============================================
@@ -42,328 +43,502 @@ bypass_debug_info()
 bypass_getfenv()
 
 -- =============================================
--- PHASE 2: UI LOADER WITH MULTIPLE SOURCES
+-- PHASE 2: UI DIREKTNO U SCRIPTU
+-- Made by Kimi
 -- =============================================
 
-local function LoadUI()
-    -- Multiple UI sources to try
-    local uiSources = {
-        "https://raw.githubusercontent.com/kekijak142/fg/refs/heads/main/gfh",
-        "https://raw.githubusercontent.com/kekijak142/fg/main/gfh",
-        "https://pastebin.com/raw/your_backup_paste", -- Add your own backup
-        -- Add more sources here
-    }
-    
-    local AscendUI = nil
-    
-    for _, url in ipairs(uiSources) do
-        local success, result = pcall(function()
-            return loadstring(game:HttpGet(url))()
-        end)
-        
-        if success and result then
-            AscendUI = result
-            print("[ABYSS] UI loaded from: " .. url)
-            break
-        else
-            warn("[ABYSS] Failed to load from: " .. url)
-        end
-    end
-    
-    return AscendUI
+local sg = Instance.new("ScreenGui")
+sg.Name = "Kimi_BladeBall"
+sg.ResetOnSpawn = false
+
+local success = pcall(function()
+    sg.Parent = game:GetService("CoreGui")
+end)
+
+if not success then
+    sg.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Try to load UI
-local AscendUI = LoadUI()
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 500, 0, 400)
+Main.Position = UDim2.new(0.5, -250, 0.5, -200)
+Main.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+Main.BorderSizePixel = 0
+Main.ClipsDescendants = true
+Main.Parent = sg
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+
+local Stroke = Instance.new("UIStroke", Main)
+Stroke.Color = Color3.fromRGB(140, 82, 255)
+Stroke.Thickness = 1.5
+Stroke.Transparency = 0.7
 
 -- =============================================
--- PHASE 3: FALLBACK UI (BUILT-IN)
+-- TOP BAR
+-- Made by Kimi
 -- =============================================
 
-if not AscendUI then
-    warn("[ABYSS] All UI sources failed - Using built-in fallback")
-    
-    -- Create fallback UI directly
-    local sg = Instance.new("ScreenGui")
-    sg.Name = "ABYSS_Fallback"
-    sg.ResetOnSpawn = false
-    pcall(function() sg.Parent = game:GetService("CoreGui") end)
-    if not sg.Parent then
-        sg.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    end
-    
-    local Main = Instance.new("Frame")
-    Main.Size = UDim2.new(0, 450, 0, 350)
-    Main.Position = UDim2.new(0.5, -225, 0.5, -175)
-    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    Main.BorderSizePixel = 0
-    Main.ClipsDescendants = true
-    Main.Parent = sg
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
-    
-    -- Title bar
-    local TitleBar = Instance.new("Frame", Main)
-    TitleBar.Size = UDim2.new(1, 0, 0, 40)
-    TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-    TitleBar.BorderSizePixel = 0
-    Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 10)
-    
-    local Title = Instance.new("TextLabel", TitleBar)
-    Title.Size = UDim2.new(1, -80, 1, 0)
-    Title.Position = UDim2.new(0, 15, 0, 0)
-    Title.BackgroundTransparency = 1
-    Title.Text = "ABYSS // BLADE BALL"
-    Title.TextColor3 = Color3.fromRGB(140, 82, 255)
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 16
-    Title.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Close button
-    local CloseBtn = Instance.new("TextButton", TitleBar)
-    CloseBtn.Size = UDim2.new(0, 40, 0, 40)
-    CloseBtn.Position = UDim2.new(1, -40, 0, 0)
-    CloseBtn.BackgroundTransparency = 1
-    CloseBtn.Text = "✕"
-    CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    CloseBtn.Font = Enum.Font.Gotham
-    CloseBtn.TextSize = 16
-    CloseBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
-    
-    -- Content
-    local Content = Instance.new("ScrollingFrame", Main)
-    Content.Size = UDim2.new(1, -20, 1, -55)
-    Content.Position = UDim2.new(0, 10, 0, 50)
-    Content.BackgroundTransparency = 1
-    Content.ScrollBarThickness = 3
-    Content.ScrollBarImageColor3 = Color3.fromRGB(140, 82, 255)
-    
-    local List = Instance.new("UIListLayout", Content)
-    List.Padding = UDim.new(0, 8)
-    List.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Content.CanvasSize = UDim2.new(0, 0, 0, List.AbsoluteContentSize.Y + 20)
-    end)
-    
-    -- Helper function for buttons
-    local function CreateButton(text, color, callback)
-        local btn = Instance.new("TextButton", Content)
-        btn.Size = UDim2.new(0.9, 0, 0, 40)
-        btn.BackgroundColor3 = color or Color3.fromRGB(30, 30, 40)
-        btn.Text = text
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.Font = Enum.Font.GothamSemibold
-        btn.TextSize = 14
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-        btn.MouseButton1Click:Connect(callback)
-        return btn
-    end
-    
-    -- Toggle state
-    local autoParryState = false
-    local autoRedirectState = false
-    
-    -- Status label
-    local StatusLabel = Instance.new("TextLabel", Content)
-    StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
-    StatusLabel.BackgroundTransparency = 1
-    StatusLabel.Text = "🔴 Auto Parry: OFF"
-    StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    StatusLabel.Font = Enum.Font.Gotham
-    StatusLabel.TextSize = 13
-    
-    -- Buttons
-    CreateButton("🎯 Toggle Auto Parry", Color3.fromRGB(40, 40, 60), function()
-        autoParryState = not autoParryState
-        if autoParryState then
-            startParryLoop()
-            StatusLabel.Text = "🟢 Auto Parry: ON"
-            StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        else
-            stopParryLoop()
-            StatusLabel.Text = "🔴 Auto Parry: OFF"
-            StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-        end
-    end)
-    
-    CreateButton("🔄 Toggle Auto Redirect", Color3.fromRGB(40, 40, 60), function()
-        autoRedirectState = not autoRedirectState
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "ABYSS",
-            Text = "Auto Redirect: " .. (autoRedirectState and "ON" or "OFF"),
-            Duration = 1.5
-        })
-    end)
-    
-    CreateButton("🏃 Walkspeed: 16", Color3.fromRGB(30, 30, 40), function()
-        local val = 16
-        local char = game.Players.LocalPlayer.Character
-        if char then
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                val = humanoid.WalkSpeed == 16 and 50 or 16
-                humanoid.WalkSpeed = val
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "ABYSS",
-                    Text = "Walkspeed: " .. val,
-                    Duration = 1
-                })
+local TopBar = Instance.new("Frame", Main)
+TopBar.Size = UDim2.new(1, 0, 0, 45)
+TopBar.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+TopBar.BorderSizePixel = 0
+Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 10)
+
+local Title = Instance.new("TextLabel", TopBar)
+Title.Size = UDim2.new(1, -120, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "KIMI // BLADE BALL"
+Title.TextColor3 = Color3.fromRGB(140, 82, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 17
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local SubTitle = Instance.new("TextLabel", TopBar)
+SubTitle.Size = UDim2.new(1, -120, 1, 0)
+SubTitle.Position = UDim2.new(0, 15, 0, 22)
+SubTitle.BackgroundTransparency = 1
+SubTitle.Text = "made by kimi"
+SubTitle.TextColor3 = Color3.fromRGB(100, 100, 120)
+SubTitle.Font = Enum.Font.Gotham
+SubTitle.TextSize = 10
+SubTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local MinBtn = Instance.new("TextButton", TopBar)
+MinBtn.Size = UDim2.new(0, 35, 0, 35)
+MinBtn.Position = UDim2.new(1, -85, 0.5, -17.5)
+MinBtn.BackgroundTransparency = 1
+MinBtn.Text = "−"
+MinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+MinBtn.Font = Enum.Font.Gotham
+MinBtn.TextSize = 22
+MinBtn.MouseButton1Click:Connect(function()
+    Main.Size = Main.Size.Y.Offset == 45 and UDim2.new(0, 500, 0, 400) or UDim2.new(0, 500, 0, 45)
+end)
+
+local CloseBtn = Instance.new("TextButton", TopBar)
+CloseBtn.Size = UDim2.new(0, 35, 0, 35)
+CloseBtn.Position = UDim2.new(1, -45, 0.5, -17.5)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+CloseBtn.Font = Enum.Font.Gotham
+CloseBtn.TextSize = 16
+CloseBtn.MouseButton1Click:Connect(function()
+    sg:Destroy()
+end)
+
+-- Dragging
+local dragging, dragInput, dragStart, startPos
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = Main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
             end
+        end)
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+-- =============================================
+-- SIDEBAR
+-- Made by Kimi
+-- =============================================
+
+local Sidebar = Instance.new("Frame", Main)
+Sidebar.Size = UDim2.new(0, 130, 1, -45)
+Sidebar.Position = UDim2.new(0, 0, 0, 45)
+Sidebar.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+Sidebar.BorderSizePixel = 0
+
+local SidebarList = Instance.new("UIListLayout", Sidebar)
+SidebarList.Padding = UDim.new(0, 6)
+SidebarList.Position = UDim2.new(0, 10, 0, 10)
+
+-- =============================================
+-- CONTAINER
+-- Made by Kimi
+-- =============================================
+
+local Container = Instance.new("Frame", Main)
+Container.Size = UDim2.new(1, -140, 1, -55)
+Container.Position = UDim2.new(0, 140, 0, 55)
+Container.BackgroundTransparency = 1
+
+-- =============================================
+-- UI FUNKCIJE - Made by Kimi
+-- =============================================
+
+local function CreateTab(name)
+    local TabBtn = Instance.new("TextButton", Sidebar)
+    TabBtn.Size = UDim2.new(0.85, 0, 0, 35)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+    TabBtn.Text = name
+    TabBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    TabBtn.Font = Enum.Font.GothamSemibold
+    TabBtn.TextSize = 13
+    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+    
+    local Page = Instance.new("ScrollingFrame", Container)
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.ScrollBarThickness = 2
+    Page.ScrollBarImageColor3 = Color3.fromRGB(140, 82, 255)
+    Page.Visible = false
+    
+    local PageList = Instance.new("UIListLayout", Page)
+    PageList.Padding = UDim.new(0, 8)
+    PageList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Page.CanvasSize = UDim2.new(0, 0, 0, PageList.AbsoluteContentSize.Y + 20)
+    end)
+    
+    return {
+        Button = TabBtn,
+        Page = Page,
+        List = PageList,
+        
+        CreateButton = function(self, text, callback)
+            local btn = Instance.new("TextButton", Page)
+            btn.Size = UDim2.new(1, -10, 0, 38)
+            btn.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+            btn.Text = text
+            btn.TextColor3 = Color3.fromRGB(240, 240, 240)
+            btn.Font = Enum.Font.Gotham
+            btn.TextSize = 14
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+            btn.MouseButton1Click:Connect(callback)
+            return btn
+        end,
+        
+        CreateToggle = function(self, text, default, callback)
+            local state = default or false
+            local frame = Instance.new("Frame", Page)
+            frame.Size = UDim2.new(1, -10, 0, 40)
+            frame.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+            Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+            
+            local lbl = Instance.new("TextLabel", frame)
+            lbl.Size = UDim2.new(1, -70, 1, 0)
+            lbl.Position = UDim2.new(0, 12, 0, 0)
+            lbl.BackgroundTransparency = 1
+            lbl.Text = text
+            lbl.TextColor3 = Color3.fromRGB(240, 240, 240)
+            lbl.Font = Enum.Font.Gotham
+            lbl.TextSize = 14
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+            
+            local track = Instance.new("Frame", frame)
+            track.Size = UDim2.new(0, 40, 0, 22)
+            track.Position = UDim2.new(1, -50, 0.5, -11)
+            track.BackgroundColor3 = state and Color3.fromRGB(140, 82, 255) or Color3.fromRGB(40, 40, 50)
+            Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+            
+            local knob = Instance.new("Frame", track)
+            knob.Size = UDim2.new(0, 18, 0, 18)
+            knob.Position = UDim2.new(state and 1 or 0, state and -20 or 2, 0.5, -9)
+            knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+            
+            local btn = Instance.new("TextButton", frame)
+            btn.Size = UDim2.new(1, 0, 1, 0)
+            btn.BackgroundTransparency = 1
+            btn.Text = ""
+            
+            btn.MouseButton1Click:Connect(function()
+                state = not state
+                track.BackgroundColor3 = state and Color3.fromRGB(140, 82, 255) or Color3.fromRGB(40, 40, 50)
+                knob.Position = UDim2.new(state and 1 or 0, state and -20 or 2, 0.5, -9)
+                callback(state)
+            end)
+            callback(state)
+            return frame
+        end,
+        
+        CreateSlider = function(self, text, min, max, default, callback)
+            local val = default or min
+            local frame = Instance.new("Frame", Page)
+            frame.Size = UDim2.new(1, -10, 0, 55)
+            frame.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+            Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+            
+            local lbl = Instance.new("TextLabel", frame)
+            lbl.Size = UDim2.new(1, -24, 0, 28)
+            lbl.Position = UDim2.new(0, 12, 0, 0)
+            lbl.BackgroundTransparency = 1
+            lbl.Text = text .. ": " .. val
+            lbl.TextColor3 = Color3.fromRGB(240, 240, 240)
+            lbl.Font = Enum.Font.Gotham
+            lbl.TextSize = 13
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+            
+            local bg = Instance.new("Frame", frame)
+            bg.Size = UDim2.new(1, -24, 0, 6)
+            bg.Position = UDim2.new(0, 12, 0, 36)
+            bg.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+            Instance.new("UICorner", bg).CornerRadius = UDim.new(1, 0)
+            
+            local fill = Instance.new("Frame", bg)
+            fill.Size = UDim2.new((val - min) / (max - min), 0, 1, 0)
+            fill.BackgroundColor3 = Color3.fromRGB(140, 82, 255)
+            Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+            
+            local btn = Instance.new("TextButton", bg)
+            btn.Size = UDim2.new(1, 0, 1, 16)
+            btn.Position = UDim2.new(0, 0, 0, -8)
+            btn.BackgroundTransparency = 1
+            btn.Text = ""
+            
+            local dragging = false
+            local UIS = game:GetService("UserInputService")
+            
+            btn.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = true
+                end
+            end)
+            
+            UIS.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = false
+                end
+            end)
+            
+            UIS.InputChanged:Connect(function(input)
+                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    local pct = math.clamp((input.Position.X - bg.AbsolutePosition.X) / bg.AbsoluteSize.X, 0, 1)
+                    val = math.floor(min + (max - min) * pct)
+                    fill.Size = UDim2.new(pct, 0, 1, 0)
+                    lbl.Text = text .. ": " .. val
+                    callback(val)
+                end
+            end)
+            
+            return frame
         end
-    end)
-    
-    CreateButton("🔄 Rejoin Server", Color3.fromRGB(30, 30, 40), function()
-        game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
-    end)
-    
-    CreateButton("🔧 Refresh Bypasses", Color3.fromRGB(30, 30, 40), function()
-        bypass_debug_info()
-        bypass_getfenv()
+    }
+end
+
+-- =============================================
+-- KREIRAJ TABOVE - Made by Kimi
+-- =============================================
+
+local CombatTab = CreateTab("⚔️ Combat")
+local MovementTab = CreateTab("🚀 Movement")
+local UtilityTab = CreateTab("⚙️ Utility")
+local StatusTab = CreateTab("📊 Status")
+local CreditsTab = CreateTab("👤 Credits")
+
+-- Prvi tab aktivan
+CombatTab.Page.Visible = true
+CombatTab.Button.BackgroundColor3 = Color3.fromRGB(140, 82, 255)
+CombatTab.Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local function SwitchTab(tab)
+    for _, t in pairs({CombatTab, MovementTab, UtilityTab, StatusTab, CreditsTab}) do
+        t.Page.Visible = false
+        t.Button.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+        t.Button.TextColor3 = Color3.fromRGB(180, 180, 180)
+    end
+    tab.Page.Visible = true
+    tab.Button.BackgroundColor3 = Color3.fromRGB(140, 82, 255)
+    tab.Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+end
+
+CombatTab.Button.MouseButton1Click:Connect(function() SwitchTab(CombatTab) end)
+MovementTab.Button.MouseButton1Click:Connect(function() SwitchTab(MovementTab) end)
+UtilityTab.Button.MouseButton1Click:Connect(function() SwitchTab(UtilityTab) end)
+StatusTab.Button.MouseButton1Click:Connect(function() SwitchTab(StatusTab) end)
+CreditsTab.Button.MouseButton1Click:Connect(function() SwitchTab(CreditsTab) end)
+
+-- =============================================
+-- CREDITS TAB - Made by Kimi
+-- =============================================
+
+CreditsTab:CreateButton("👑 Made by Kimi", function()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "KIMI",
+        Text = "All credits go to Kimi! ❤️",
+        Duration = 3
+    })
+end)
+
+CreditsTab:CreateButton("📱 Discord: @kimi", function()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "KIMI",
+        Text = "Contact: @kimi on Discord",
+        Duration = 3
+    })
+end)
+
+CreditsTab:CreateButton("⭐ Support Kimi", function()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "KIMI",
+        Text = "Thanks for using Kimi's script! ❤️",
+        Duration = 3
+    })
+end)
+
+-- =============================================
+-- KOMBAT TAB
+-- =============================================
+
+local autoParryEnabled = false
+local autoRedirectEnabled = false
+
+CombatTab:CreateToggle("Auto Parry", false, function(state)
+    autoParryEnabled = state
+    if state then
+        startParryLoop()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "ABYSS",
-            Text = "Bypasses Refreshed",
+            Title = "KIMI",
+            Text = "Auto Parry: ON",
             Duration = 1.5
         })
-    end)
-    
-    warn("[ABYSS] Fallback UI active")
-else
-    -- =============================================
-    -- PHASE 4: FULL ASCEND HUB UI
-    -- =============================================
-    
-    local MainWindow = AscendUI:CreateWindow("ASCEND HUB // ABYSS EDITION")
-    
-    -- Combat Tab
-    local CombatTab = MainWindow:CreateTab("⚔️ Combat")
-    
-    local autoParryEnabled = false
-    CombatTab:CreateToggle("Auto Parry", false, function(state)
-        autoParryEnabled = state
-        if state then
-            startParryLoop()
-        else
-            stopParryLoop()
-        end
+    else
+        stopParryLoop()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "ASCEND HUB",
-            Text = "Auto Parry: " .. (state and "ON" or "OFF"),
+            Title = "KIMI",
+            Text = "Auto Parry: OFF",
             Duration = 1.5
         })
-    end)
-    
-    local autoRedirectEnabled = false
-    CombatTab:CreateToggle("Auto Redirect", false, function(state)
-        autoRedirectEnabled = state
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "ASCEND HUB",
-            Text = "Auto Redirect: " .. (state and "ON" or "OFF"),
-            Duration = 1.5
-        })
-    end)
-    
-    CombatTab:CreateSlider("Parry Cooldown", 50, 300, 150, function(value)
-        CONFIG.PARRY_COOLDOWN = value / 1000
-    end)
-    
-    CombatTab:CreateSlider("Reaction Time", 50, 250, 100, function(value)
-        CONFIG.REACTION_TIME = value / 1000
-    end)
-    
-    CombatTab:CreateButton("Force Parry", function()
-        Parry()
-    end)
-    
-    -- Movement Tab
-    local MovementTab = MainWindow:CreateTab("🚀 Movement")
-    
-    MovementTab:CreateSlider("Walkspeed", 16, 250, 16, function(value)
-        local char = game.Players.LocalPlayer.Character
-        if char then
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            if humanoid then humanoid.WalkSpeed = value end
+    end
+end)
+
+CombatTab:CreateToggle("Auto Redirect", false, function(state)
+    autoRedirectEnabled = state
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "KIMI",
+        Text = "Auto Redirect: " .. (state and "ON" or "OFF"),
+        Duration = 1.5
+    })
+end)
+
+CombatTab:CreateSlider("Parry Cooldown (ms)", 50, 300, 150, function(value)
+    CONFIG.PARRY_COOLDOWN = value / 1000
+end)
+
+CombatTab:CreateSlider("Reaction Time (ms)", 50, 250, 100, function(value)
+    CONFIG.REACTION_TIME = value / 1000
+end)
+
+CombatTab:CreateButton("Force Parry", function()
+    Parry()
+end)
+
+-- =============================================
+-- MOVEMENT TAB
+-- =============================================
+
+MovementTab:CreateSlider("Walkspeed", 16, 250, 16, function(value)
+    local char = game.Players.LocalPlayer.Character
+    if char then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = value
         end
-    end)
-    
-    MovementTab:CreateSlider("Jumppower", 50, 150, 50, function(value)
-        local char = game.Players.LocalPlayer.Character
-        if char then
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            if humanoid then humanoid.JumpPower = value end
+    end
+end)
+
+MovementTab:CreateSlider("Jumppower", 50, 150, 50, function(value)
+    local char = game.Players.LocalPlayer.Character
+    if char then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.JumpPower = value
         end
-    end)
-    
-    local infiniteJump = false
-    MovementTab:CreateToggle("Infinite Jump", false, function(state)
-        infiniteJump = state
-        if state then
-            game:GetService("UserInputService").JumpRequest:Connect(function()
-                if infiniteJump then
-                    local char = game.Players.LocalPlayer.Character
-                    if char then
-                        local humanoid = char:FindFirstChildOfClass("Humanoid")
-                        if humanoid and humanoid.Health > 0 then
-                            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                        end
+    end
+end)
+
+local infiniteJump = false
+MovementTab:CreateToggle("Infinite Jump", false, function(state)
+    infiniteJump = state
+    if state then
+        game:GetService("UserInputService").JumpRequest:Connect(function()
+            if infiniteJump then
+                local char = game.Players.LocalPlayer.Character
+                if char then
+                    local humanoid = char:FindFirstChildOfClass("Humanoid")
+                    if humanoid and humanoid.Health > 0 then
+                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
                     end
                 end
-            end)
-        end
-    end)
-    
-    -- Utility Tab
-    local UtilityTab = MainWindow:CreateTab("⚙️ Utility")
-    
-    UtilityTab:CreateButton("Rejoin Server", function()
-        game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
-    end)
-    
-    local antiAFK = false
-    UtilityTab:CreateToggle("Anti-AFK", false, function(state)
-        antiAFK = state
-        if state then
-            game:GetService("RunService").Heartbeat:Connect(function()
-                if antiAFK then
-                    pcall(function()
-                        local vu = game:GetService("VirtualUser")
-                        vu:CaptureController()
-                        vu:ClickButton2(Vector2.new())
-                    end)
-                end
-            end)
-        end
-    end)
-    
-    UtilityTab:CreateButton("Refresh Bypasses", function()
-        bypass_debug_info()
-        bypass_getfenv()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "ASCEND HUB",
-            Text = "Bypasses Refreshed",
-            Duration = 1.5
-        })
-    end)
-    
-    -- Status Tab
-    local StatusTab = MainWindow:CreateTab("📊 Status")
-    
-    StatusTab:CreateSection("System Status")
-    
-    StatusTab:CreateButton("Check Status", function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "ASCEND HUB",
-            Text = "✅ debug.info: HOOKED\n✅ getfenv: HOOKED\n✅ UI: LOADED\n✅ Engine: READY",
-            Duration = 4
-        })
-    end)
-    
-    print("[ABYSS] Ascend Hub UI loaded successfully")
-end
+            end
+        end)
+    end
+end)
 
 -- =============================================
--- PHASE 5: BLADE BALL ENGINE
+-- UTILITY TAB
 -- =============================================
 
--- Services
+UtilityTab:CreateButton("Rejoin Server", function()
+    game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
+end)
+
+local antiAFK = false
+UtilityTab:CreateToggle("Anti-AFK", false, function(state)
+    antiAFK = state
+    if state then
+        game:GetService("RunService").Heartbeat:Connect(function()
+            if antiAFK then
+                pcall(function()
+                    local vu = game:GetService("VirtualUser")
+                    vu:CaptureController()
+                    vu:ClickButton2(Vector2.new())
+                end)
+            end
+        end)
+    end
+end)
+
+UtilityTab:CreateButton("Refresh Bypasses", function()
+    bypass_debug_info()
+    bypass_getfenv()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "KIMI",
+        Text = "Bypasses Refreshed",
+        Duration = 1.5
+    })
+end)
+
+-- =============================================
+-- STATUS TAB
+-- =============================================
+
+StatusTab:CreateButton("Check Status", function()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "KIMI",
+        Text = "✅ debug.info: HOOKED\n✅ getfenv: HOOKED\n✅ UI: LOADED\n✅ Engine: READY\n✅ Made by Kimi",
+        Duration = 4
+    })
+end)
+
+StatusTab:CreateButton("Reset UI", function()
+    sg:Destroy()
+    task.wait(0.3)
+    loadstring(game:HttpGet("CURRENT_SCRIPT_URL_HERE"))()
+end)
+
+-- =============================================
+-- BLADE BALL ENGINE - Made by Kimi
+-- =============================================
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -371,21 +546,15 @@ local Player = Players.LocalPlayer
 local Balls = workspace:FindFirstChild("Balls") or workspace:WaitForChild("Balls", 5)
 local Remotes = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage
 
--- Config
 local CONFIG = {
     PARRY_COOLDOWN = 0.15,
     REACTION_TIME = 0.1,
-    SPAM_DEFENSE = true
 }
 
--- State
 local parryCooldown = false
 local parryConnection = nil
 local spamConnection = nil
-local autoParryEnabled = false
-local autoRedirectEnabled = false
 
--- Verify ball
 local function VerifyBall(Ball)
     if typeof(Ball) == "Instance" and Ball:IsA("BasePart") and Ball:IsDescendantOf(Balls) then
         return true
@@ -393,12 +562,10 @@ local function VerifyBall(Ball)
     return false
 end
 
--- Check if targeted
 local function IsTargeted()
     return Player.Character and Player.Character:FindFirstChild("Highlight")
 end
 
--- Get nearest enemy
 local function GetNearestEnemy()
     local character = Player.Character
     if not character then return nil end
@@ -427,7 +594,6 @@ local function GetNearestEnemy()
     return nearest
 end
 
--- Perform parry
 local function Parry()
     if parryCooldown then return end
     parryCooldown = true
@@ -435,18 +601,12 @@ local function Parry()
     local parryRemote = Remotes:FindFirstChild("ParryButtonPress") or Remotes:FindFirstChild("Parry")
     if parryRemote then
         parryRemote:FireServer()
-    else
-        local remote = ReplicatedStorage:FindFirstChild("Parry")
-        if remote then
-            remote:FireServer()
-        end
     end
     
     task.wait(CONFIG.PARRY_COOLDOWN)
     parryCooldown = false
 end
 
--- Start parry loop
 function startParryLoop()
     if parryConnection then
         parryConnection:Disconnect()
@@ -522,7 +682,6 @@ function startParryLoop()
     end)
 end
 
--- Stop parry loop
 function stopParryLoop()
     if parryConnection then
         parryConnection:Disconnect()
@@ -535,13 +694,21 @@ function stopParryLoop()
 end
 
 -- =============================================
--- PHASE 6: INITIALIZATION
+-- INIT
 -- =============================================
 
 game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "ABYSS // BLADE BALL",
-    Text = "Anti-Cheat Bypassed | Engine Ready",
+    Title = "KIMI // BLADE BALL",
+    Text = "Made by Kimi ❤️ | Auto Parry Ready",
     Duration = 3
 })
 
-print("[ABYSS] Fixed loader complete - made by @erika.is.ur.mom")
+print("═══════════════════════════════════════════")
+print("  KIMI // BLADE BALL SCRIPT")
+print("  ──────────────────────────")
+print("  Made by: Kimi")
+print("  Discord: @kimi")
+print("  All credits to Kimi ❤️")
+print("═══════════════════════════════════════════")
+
+print("[KIMI] Blade Ball UI loaded successfully!")
